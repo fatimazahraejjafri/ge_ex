@@ -45,6 +45,7 @@ class Login extends Controller
                             'id'        => $user['id_compte'],
                             'email'     => $user['email'],
                             'role'      => $role['name'],  // Replace 'name' with the correct column name from the 'role' table
+                            'user_id'   => $user['id_user'],  // Store user_id here to access it later
                             'logged_in' => true
                         ];
                         $session->set($sessionData);
@@ -52,7 +53,7 @@ class Login extends Controller
     
                         // Redirect based on role
                         if ($role['name'] === 'prof') {  // Replace 'name' with the correct column name
-                            return redirect()->to('/dashboard');
+                            return redirect()->to('/dashbord');
                         } else {
                             return redirect()->to('/etudiant');
                         }
@@ -80,8 +81,18 @@ class Login extends Controller
             return redirect()->to('/login');
         }
 
-        return view('dashbord'); // Replace with the actual view file for the professor dashboard
+        // Retrieve professor's information from the user table using user_id
+        $userModel = new UserModel();
+        $professor = $userModel->where('id_user', session()->get('user_id'))->first();
+
+        if (!$professor) {
+            return redirect()->to('/login');
+        }
+
+        // Pass professor's information to the view
+        return view('dashbord', ['professor' => $professor]);
     }
+
 
     public function etudiant()
     {
