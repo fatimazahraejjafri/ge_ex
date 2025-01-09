@@ -133,7 +133,7 @@
   <div class="dashboard">
     <!-- Barre latérale -->
     <aside class="sidebar">
-      <img src="homme.png" alt="Maroc Image" style="width: 50%; height: auto; display: block; margin: auto;" />
+      <img src="dashboard\homme.png" alt="Maroc Image" style="width: 50%; height: auto; display: block; margin: auto;" />
       <ul>
         <li><a href="#saisir-notes" class="active">Saisir des Notes</a></li>
         <li><a href="#mes-classes">Mes Classes</a></li>
