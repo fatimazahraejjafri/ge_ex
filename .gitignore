@@ -48,6 +48,7 @@ Vagrantfile
 #-------------------------
 # Temporary Files
 #-------------------------
+app/config/App.php
 writable/cache/*
 !writable/cache/index.html
 
