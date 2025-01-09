@@ -14,7 +14,7 @@ $routes->get('login', 'Login::index');
 $routes->post('login', 'Login::auth');
 
 // Dashboard routes
-$routes->get('dashboard', 'Login::dashboard'); // Displays the professor dashboard
+$routes->get('dashbord', 'Login::dashboard'); // Displays the professor dashboard
 $routes->get('etudiant', 'Login::etudiant'); // Displays the student dashboard
 
 $routes->get('logout', 'Login::logout');
