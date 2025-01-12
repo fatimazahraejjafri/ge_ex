@@ -4,21 +4,12 @@ namespace App\Models;
 
 use CodeIgniter\Model;
 
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> ef5019b065249b84255fd2345db4bede388fb09f
 class NoteModel extends Model
 {
     protected $table = 'note';
     protected $primaryKey = 'id_note';
     protected $allowedFields = ['id_module', 'id_user', 'grade'];
 
-<<<<<<< HEAD
-}
-=======
     public function saveMultipleNotes($moduleId, $grades, $filiereId)
     {
         // Récupérer les étudiants (users) en fonction de la filière
@@ -47,4 +38,3 @@ class NoteModel extends Model
         return true;
     }
 }
->>>>>>> ef5019b065249b84255fd2345db4bede388fb09f
