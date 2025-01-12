@@ -14,8 +14,14 @@ $routes->get('login', 'Login::index');
 $routes->post('login', 'Login::auth');
 
 // Dashboard routes
-$routes->get('dashbord', 'Login::dashboard'); // Displays the professor dashboard
+$routes->get('dashboard', 'Login::dashboard'); // Displays the professor dashboard
 $routes->get('etudiant', 'Login::etudiant'); // Displays the student dashboard
 
-$routes->get('logout', 'Login::logout');
+$routes->get('filiere/getFilieresByProf/(:num)', 'FiliereController::getFilieresByProf/$1');
+$routes->get('module/getModulesByFiliereAndProf/(:num)/(:num)', 'ModuleController::getModulesByFiliereAndProf/$1/$2');
+$routes->get('etudiant/getStudentsByFiliere/(:num)', 'EtudiantController::getStudentsByFiliere/$1');
+
+
+
+$routes->get('login/logout', 'Login::logout');
 
