@@ -21,7 +21,7 @@ $routes->get('filiere/getFilieresByProf/(:num)', 'FiliereController::getFilieres
 $routes->get('module/getModulesByFiliereAndProf/(:num)/(:num)', 'ModuleController::getModulesByFiliereAndProf/$1/$2');
 $routes->get('etudiant/getStudentsByFiliere/(:num)', 'EtudiantController::getStudentsByFiliere/$1');
 $routes->post('insertGrades', 'NoteController::insertGrades');
-
+$routes->post('importExcel', 'NoteController::insertGradesFromExcel');
 
 
 $routes->get('login/logout', 'Login::logout');

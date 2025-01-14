@@ -132,6 +132,17 @@
         <?php endif; ?>
         <p>Sélectionnez une option dans le menu pour commencer.</p>
       </header>
+      <section id="methodSelection">
+  <h2>Choisissez une méthode de saisie</h2>
+  <label>
+    <input type="radio" name="method" value="manual" checked>
+    Saisie Manuelle
+  </label>
+  <label>
+    <input type="radio" name="method" value="excel">
+    Importation Excel
+  </label>
+</section>
       <section id="saisir-notes">
         <h2>Saisir des Notes</h2>
         <form id="noteForm" method="post" action="<?= base_url('insertGrades') ?>">
@@ -163,112 +174,212 @@
             <button type="button" onclick="submitGrades()">Enregistrer les Notes</button>
           </div>
         </form>
+        <form id="noteForm2" class="hidden" method="post" action="<?= base_url('importExcel') ?>" enctype="multipart/form-data">
+          <label for="filiere_excel">Filière :</label>
+          <select id="filiere_excel" name="filiere_excel" required>
+            <option value="" disabled selected>Choisissez une filière</option>
+            <!-- Filled dynamically by JavaScript -->
+          </select>
+
+          <label for="module_excel">Module :</label>
+          <select id="module_excel" name="id_module" required>
+            <option value="" disabled selected>Choisissez un module</option>
+            <!-- Filled dynamically by JavaScript -->
+          </select>
+
+          <label for="grades_file">Fichier Excel :</label>
+          <input type="file" name="grades_file" id="grades_file" accept=".xls,.xlsx" required>
+          <button type="submit">Importer depuis Excel</button>
+        </form>
       </section>
+
     </main>
   </div>
+
   <script>
-    const professorId = <?= json_encode(session()->get('id')) ?>;
-    async function loadFilieres() {
-      const response = await fetch(`<?= base_url("filiere/getFilieresByProf") ?>/${professorId}`);
-      const filieres = await response.json();
-      const filiereSelect = document.getElementById('filiere');
-      filiereSelect.innerHTML = '<option value="" disabled selected>Choisissez une filière</option>';
-      filieres.forEach(filiere => {
-        const option = document.createElement('option');
-        option.value = filiere.id_filiere;
-        option.textContent = filiere.name;
-        filiereSelect.appendChild(option);
-      });
-    }
-    async function loadModules() {
-      const filiereId = document.getElementById('filiere').value;
-      if (!filiereId) return;
-      const response = await fetch(`<?= base_url("module/getModulesByFiliereAndProf") ?>/${filiereId}/${professorId}`);
-      const modules = await response.json();
-      const moduleSelect = document.getElementById('module');
-      moduleSelect.innerHTML = '<option value="" disabled selected>Choisissez un module</option>';
-      modules.forEach(module => {
-        const option = document.createElement('option');
-        option.value = module.id_module;
-        option.textContent = module.name;
-        moduleSelect.appendChild(option);
-      });
-    }
-    async function loadStudents() {
-      const moduleId = document.getElementById('module').value;
-      if (!moduleId) return;
-      const response = await fetch(`<?= base_url("etudiant/getStudentsByFiliere") ?>/${moduleId}`);
-      const students = await response.json();
-      const studentTable = document.getElementById('studentsTable');
-      studentTable.innerHTML = '';
-      students.forEach(student => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${student.id_user}</td>
-          <td>${student.last_name}</td>
-          <td>${student.first_name}</td>
-          <td><input type="number" name="grades[${student.id_user}]" min="0" max="20" step="0.5" required></td>
-        `;
-        studentTable.appendChild(row);
-      });
-      document.getElementById('studentsContainer').classList.remove('hidden');
-    }
-async function submitGrades() {
-  const moduleId = document.getElementById('module').value;
-  const gradeInputs = document.querySelectorAll('input[name^="grades"]');
-  
-  let grades = [];
-  let isValid = true;
-  // Validation des notes et préparation des données à envoyer
-  gradeInputs.forEach(input => {
-    const studentId = input.name.match(/\d+/)[0]; // Extraire l'id de l'étudiant à partir du nom du champ
-    const grade = input.value;
-    
-    if (grade && (grade < 0 || grade > 20)) {
-      isValid = false;
-      alert(`La note pour l'étudiant ${studentId} est invalide. Les notes doivent être entre 0 et 20.`);
-      return;
-    }
-    
-    if (grade) {
-      grades.push({
-        id_user: studentId,
-        grade: grade
-      });
-    }
-  });
-  // Si les données sont invalides, on arrête l'exécution
-  if (!isValid) {
-    return;
-  }
-  // Vérification qu'il y a au moins une note à envoyer
-  if (grades.length === 0) {
-    alert('Veuillez entrer des notes pour les étudiants.');
-    return;
-  }
-  // Envoi des données
-  const formData = new FormData();
-  formData.append('id_module', moduleId);
-  formData.append('grades', JSON.stringify(grades)); // Passer les données sous forme de JSON
-  try {
-    const response = await fetch('<?= base_url("insertGrades") ?>', {
-      method: 'POST',
-      body: formData,
+     async function submitGrades() {
+    const activeForm = document.querySelector('form:not(.hidden)');
+    const moduleId = activeForm.querySelector('select[name="module"]').value;
+    const gradeInputs = activeForm.querySelectorAll('input[name^="grades"]');
+    let grades = [];
+    let isValid = true;
+
+    gradeInputs.forEach(input => {
+      const match = input.name.match(/\d+/);
+      if (!match) return;
+      const studentId = match[0];
+      const grade = input.value;
+      if (grade && (grade < 0 || grade > 20)) {
+        isValid = false;
+        alert(`La note pour l'étudiant ${studentId} est invalide. Les notes doivent être entre 0 et 20.`);
+        return;
+      }
+      if (grade) grades.push({ id_user: studentId, grade: grade });
     });
-    const result = await response.json();
-    if (response.ok) {
-      alert('Les notes ont été enregistrées avec succès !');
-    } else {
-      alert('Une erreur est survenue lors de l\'enregistrement des notes.');
+
+    if (!isValid || grades.length === 0) return;
+
+    const formData = new FormData();
+    formData.append('id_module', moduleId);
+    formData.append('grades', JSON.stringify(grades));
+
+    try {
+      const response = await fetch('<?= base_url("insertGrades") ?>', { method: 'POST', body: formData });
+      if (response.ok) alert('Les notes ont été enregistrées avec succès !');
+      else alert('Une erreur est survenue lors de l\'enregistrement des notes.');
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi des données :', error);
     }
-  } catch (error) {
-    console.error('Erreur lors de l\'envoi des données :', error);
-    alert('Une erreur est survenue lors de l\'enregistrement des notes.');
   }
-}
-    document.getElementById('filiere').addEventListener('change', loadModules);
-    document.getElementById('module').addEventListener('change', loadStudents);
-    document.addEventListener('DOMContentLoaded', loadFilieres);
+   document.addEventListener('DOMContentLoaded', () => {
+  const methodRadios = document.querySelectorAll('input[name="method"]');
+  const manualForm = document.getElementById('noteForm');
+  const excelForm = document.getElementById('noteForm2');
+  const professorId = <?= json_encode(session()->get('id')) ?>;
+
+  // Toggle between manual and Excel forms
+  function toggleForms() {
+    const selectedMethod = document.querySelector('input[name="method"]:checked').value;
+    if (selectedMethod === 'manual') {
+      manualForm.classList.remove('hidden');
+      excelForm.classList.add('hidden');
+    } else if (selectedMethod === 'excel') {
+      manualForm.classList.add('hidden');
+      excelForm.classList.remove('hidden');
+    }
+  }
+
+  methodRadios.forEach(radio => {
+    radio.addEventListener('change', toggleForms);
+  });
+
+  // Load filieres and modules for manual form
+  async function loadFilieres() {
+    const response = await fetch(`<?= base_url("filiere/getFilieresByProf") ?>/${professorId}`);
+    const filieres = await response.json();
+    const filiereSelect = document.getElementById('filiere');
+    filiereSelect.innerHTML = '<option value="" disabled selected>Choisissez une filière</option>';
+    filieres.forEach(filiere => {
+      const option = document.createElement('option');
+      option.value = filiere.id_filiere;
+      option.textContent = filiere.name;
+      filiereSelect.appendChild(option);
+    });
+  }
+
+  async function loadModules() {
+    const filiereId = document.getElementById('filiere').value;
+    if (!filiereId) return;
+    const response = await fetch(`<?= base_url("module/getModulesByFiliereAndProf") ?>/${filiereId}/${professorId}`);
+    const modules = await response.json();
+    const moduleSelect = document.getElementById('module');
+    moduleSelect.innerHTML = '<option value="" disabled selected>Choisissez un module</option>';
+    modules.forEach(module => {
+      const option = document.createElement('option');
+      option.value = module.id_module;
+      option.textContent = module.name;
+      moduleSelect.appendChild(option);
+    });
+  }
+
+  // Load filieres and modules for Excel form
+  async function loadFilieresExcel() {
+    const response = await fetch(`<?= base_url("filiere/getFilieresByProf") ?>/${professorId}`);
+    const filieres = await response.json();
+    const filiereSelect = document.getElementById('filiere_excel');
+    filiereSelect.innerHTML = '<option value="" disabled selected>Choisissez une filière</option>';
+    filieres.forEach(filiere => {
+      const option = document.createElement('option');
+      option.value = filiere.id_filiere;
+      option.textContent = filiere.name;
+      filiereSelect.appendChild(option);
+    });
+  }
+
+  async function loadModulesExcel() {
+    const filiereId = document.getElementById('filiere_excel').value;
+    if (!filiereId) return;
+    const response = await fetch(`<?= base_url("module/getModulesByFiliereAndProf") ?>/${filiereId}/${professorId}`);
+    const modules = await response.json();
+    const moduleSelect = document.getElementById('module_excel');
+    moduleSelect.innerHTML = '<option value="" disabled selected>Choisissez un module</option>';
+    modules.forEach(module => {
+      const option = document.createElement('option');
+      option.value = module.id_module;
+      option.textContent = module.name;
+      moduleSelect.appendChild(option);
+    });
+  }
+
+  // Load students for manual form
+  async function loadStudents() {
+    const moduleId = document.getElementById('module').value;
+    if (!moduleId) return;
+    const response = await fetch(`<?= base_url("etudiant/getStudentsByFiliere") ?>/${moduleId}`);
+    const students = await response.json();
+    const studentTable = document.getElementById('studentsTable');
+    studentTable.innerHTML = '';
+    students.forEach(student => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${student.id_user}</td>
+        <td>${student.last_name}</td>
+        <td>${student.first_name}</td>
+        <td><input type="number" name="grades[${student.id_user}]" min="0" max="20" step="0.5" required></td>
+      `;
+      studentTable.appendChild(row);
+    });
+    document.getElementById('studentsContainer').classList.remove('hidden');
+  }
+
+  // Submit grades (manual form)
+  async function submitGrades() {
+    const activeForm = document.querySelector('form:not(.hidden)');
+    const moduleId = activeForm.querySelector('select[name="module"]').value;
+    const gradeInputs = activeForm.querySelectorAll('input[name^="grades"]');
+    let grades = [];
+    let isValid = true;
+
+    gradeInputs.forEach(input => {
+      const match = input.name.match(/\d+/);
+      if (!match) return;
+      const studentId = match[0];
+      const grade = input.value;
+      if (grade && (grade < 0 || grade > 20)) {
+        isValid = false;
+        alert(`La note pour l'étudiant ${studentId} est invalide. Les notes doivent être entre 0 et 20.`);
+        return;
+      }
+      if (grade) grades.push({ id_user: studentId, grade: grade });
+    });
+
+    if (!isValid || grades.length === 0) return;
+
+    const formData = new FormData();
+    formData.append('id_module', moduleId);
+    formData.append('grades', JSON.stringify(grades));
+
+    try {
+      const response = await fetch('<?= base_url("insertGrades") ?>', { method: 'POST', body: formData });
+      if (response.ok) alert('Les notes ont été enregistrées avec succès !');
+      else alert('Une erreur est survenue lors de l\'enregistrement des notes.');
+    } catch (error) {
+      console.error('Erreur lors de l\'envoi des données :', error);
+    }
+  }
+
+  // Event listeners
+  document.getElementById('filiere').addEventListener('change', loadModules);
+  document.getElementById('module').addEventListener('change', loadStudents);
+
+  if (document.getElementById('filiere_excel')) {
+    document.getElementById('filiere_excel').addEventListener('change', loadModulesExcel);
+    loadFilieresExcel();
+  }
+
+  loadFilieres(); // Manual form
+});
+
   </script>
 </body>
 </html>
